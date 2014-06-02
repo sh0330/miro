@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>Local Storage test</title>
+<script>
+
+    function store() {
+    if (typeof(localStorage) == "undefined") {
+        alert("브라우저가 HTML 로컬 저장소를 인식하지 못 합니다.");
+    }
+    else {
+        try {
+            olddate = new Date();
+            localStorage.setItem("lastdate",olddate);
+            alert("저장됨: "+olddate);
+        }
+        Catch(e) {
+            alert("로컬 저장소 사용 오류: "+e);}
+        }
+        Return false;
+    }
+
+    function remove() {
+        if (typeof(localStorage) == "undefined") {
+            alert("브라우저가 HTML 로컬 저장소를 인식하지 못 합니다.");
+        }
+        else { 
+            localStorage.removeItem('lastdate');
+            alert("저장된 날짜가 삭제되었습니다.");
+        }
+        return false;
+    }
+
+    function fetch() {
+        if (typeof(localStorage) == "undefined") {
+            alert("브라우저가 HTML 로컬 저장소를 인식하지 못 합니다.");
+        }
+        else { 
+            alert("저장됨 "+localStorage.getItem('lastdate'));
+        }
+        return false;
+    } 
+</script>
+</head>
+
+<body>
+    <button onClick="javascript:store();">날짜 정보 저장</button>
+    <button onClick="javascript:fetch();">날짜 정보 불러오기</button>
+    <button onClick="javascript:remove();">날짜 정보 삭제</button>
+</body>
+</html>
