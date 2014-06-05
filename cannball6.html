@@ -1,0 +1,187 @@
+<html>
+<head>
+<title>캐논볼</title>
+<meta charset="utf-8">
+<style>
+    form {
+        width:330px;
+        margin:20px;
+        background-color:brown;
+        padding:20px;
+    }
+</style>
+
+<script type="text/javascript">
+    var cwidth = 600;
+    var cheight = 400;
+    var ctx;
+    var everything = [];
+    var tid;
+    var outofcannon;
+    var horvelocity;
+    var verticalvel1;
+    var verticalvel2;
+    var gravity = 2;  // 멋진 호가 그려지게 임의로 지정
+    var cannonx = 10;
+    var cannony = 280;
+    var cannonlength = 200;
+    var cannonht = 20;
+    var ballrad = 10;
+    var targetx = 500;
+    var targety = 50;
+    var targetw = 85;
+    var targeth = 280;
+    var htargetx = 450;
+    var htargety = 220;
+    var htargetw = 355;
+    var htargeth = 96;
+
+    // Ball, Picture, myrectangles를 캔버스의 객체로 정의. 객체마다 draw 메서드가 들어있음.
+    // 캔버스에 그려진 각 객체는 everything 배열의 원소와 대응됨
+    
+    function Ball(sx,sy,rad,stylestring) {
+        this.sx = sx;
+        this.sy = sy;
+        this.rad = rad;
+        this.draw = drawball;
+        this.moveit = moveball;
+        this.fillstyle = stylestring;
+    }
+
+    function drawball() {
+        ctx.fillStyle=this.fillstyle;
+        ctx.beginPath();
+        //ctx.fillStyle= rgb(0,0,0);
+        ctx.arc(this.sx,this.sy,this.rad,0,Math.PI*2,true);
+        ctx.fill(); 
+    }
+
+    function moveball(dx,dy) {
+        this.sx +=dx;
+        this.sy +=dy;
+    }
+
+    var cball = new Ball(cannonx+cannonlength,cannony+cannonht*.5,ballrad,"rgb(250,0,0)");
+
+    function Myrectangle(sx,sy,swidth,sheight,stylestring) {
+        this.sx = sx;
+        this.sy = sy;
+        this.swidth = swidth;
+        this.sheight = sheight;
+        this.fillstyle = stylestring;
+        this.draw = drawrects;
+        this.moveit = moveball;
+    }
+
+    function drawrects() {
+        ctx.fillStyle = this.fillstyle;
+        ctx.fillRect(this.sx,this.sy,this.swidth,this.sheight); 
+    }
+
+    function Picture (sx,sy,swidth,sheight,filen) {
+        var imga = new Image();
+        imga.src=filen;
+        this.sx = sx;
+        this.sy = sy;
+        this.img = imga;
+        this.swidth = swidth;
+        this.sheight = sheight;
+        this.draw = drawAnImage;
+        this.moveit = moveball;
+    }
+
+    function drawAnImage() {
+        ctx.drawImage(this.img,this.sx,this.sy,this.swidth,this.sheight);
+    }
+
+    var target = new Picture(targetx,targety,targetw,targeth,"hill.jpg");
+    var htarget = new Picture(htargetx, htargety, htargetw, htargeth, "plateau.jpg");
+    var ground = new Myrectangle(0,300,600,30,"rgb(10,250,0)");
+    var cannon = new Myrectangle(cannonx,cannony,cannonlength,cannonht,"rgb(40,40,0)");
+    var targetindex = everything.length;
+    everything.push([target,false]);
+    everything.push([ground,false]);
+    var ballindex = everything.length;
+    everything.push([cball,false]);
+    var cannonindex = everything.length;  // 나중 사용을 위해 저장
+    everything.push([cannon,true,0,cannonx,cannony+cannonht*.5]);  // 나중에 회전을 지정
+
+    function init(){
+        ctx = document.getElementById('canvas').getContext('2d'); 
+
+        drawall();  
+    }
+
+    function fire() {
+        var angle = Number(document.f.ang.value);
+        var outofcannon = Number(document.f.vo.value);
+        var angleradians = angle*Math.PI/180;
+        horvelocity =  outofcannon*Math.cos(angleradians);
+        verticalvel1 = - outofcannon*Math.sin(angleradians);
+        everything[cannonindex][2]= - angleradians;
+        cball.sx = cannonx + cannonlength*Math.cos(angleradians);
+        cball.sy = cannony+cannonht*.5 - cannonlength*Math.sin(angleradians);
+        drawall();
+        tid = setInterval(change,100);
+        return false;
+    }
+
+    function drawall() {
+        ctx.clearRect(0,0,cwidth,cheight);
+        var i;
+        for (i=0;i<everything.length;i++) {
+            var ob = everything[i];
+            if (ob[1]) {  // 평행이동과 회전에 필요
+                ctx.save();
+                ctx.translate(ob[3],ob[4]);
+                ctx.rotate(ob[2]);
+                ctx.translate(-ob[3],-ob[4]);
+                ob[0].draw();
+                ctx.restore(); }
+            else {
+              ob[0].draw();
+            }
+        }
+    }
+
+    function change() {
+        var dx = horvelocity;
+        verticalvel2 = verticalvel1 + gravity;
+        var dy = (verticalvel1 + verticalvel2)*.5;
+        verticalvel1 = verticalvel2;
+        cball.moveit(dx,dy);
+        // 목표물에 닿는지 검사
+        var bx = cball.sx;
+        var by = cball.sy;
+        if ((bx>=target.sx)&&(bx<=(target.sx+target.swidth))&&
+        (by>=target.sy)&&(by<=(target.sy+target.sheight))) {
+            clearInterval(tid);
+            // target을 제거하고 htarget을 삽입
+            everything.splice(targetindex,1,[htarget,false]);
+            everything.splice(ballindex,1);
+            drawall();
+            
+        }
+        // 공이 지면 영역을 벗어났는지 검사
+        if (by>=ground.sy) {
+            clearInterval(tid);
+        }
+        drawall();  
+    }
+</script>
+</head>
+
+<body onLoad="init();">  
+    <canvas id="canvas" width="600" height="400">
+        이 브라우저에서는 HTML5의 canvas 요소가 지원되지 않습니다.
+    </canvas>  
+    <br/>
+    <form name="f" id="f" onSubmit="return fire();">
+        속도, 각도를 지정하고 대포를 발사<br/> 
+        대포에서 발사되는 속도 <input name="vo" id="vo" value="10" type="number" min="-100" max="100" /> 
+        <br>
+        각도 <input name="ang" id="ang" value="0" type="number" min="0" max="80"/>
+        <input type="submit" value="발사"/>
+    </form> 
+</body>
+</html>
